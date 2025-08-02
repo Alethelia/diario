@@ -14,6 +14,11 @@
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
+    
+    /* Variables responsivas */
+    --sidebar-width: 320px;
+    --mobile-header-height: 60px;
+    --mobile-nav-height: 50px;
 }
 
 /* Utility classes */
@@ -40,17 +45,84 @@ body {
 .app-container {
     display: flex;
     height: 100vh;
+    position: relative;
+}
+
+/* Botón hamburguesa para móvil (oculto por defecto) */
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1000;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+    background: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.mobile-menu-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: white;
+    margin: 4px auto;
+    transition: 0.3s;
+    transform-origin: center;
+}
+
+.mobile-menu-btn.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* Overlay para móvil */
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.show {
+    opacity: 1;
 }
 
 /* Barra lateral */
 .sidebar {
-    width: 320px;
+    width: var(--sidebar-width);
     background-color: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     height: 100vh;
-    overflow: hidden; /* Evitar scroll en el sidebar principal */
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1000;
 }
 
 .sidebar-header {
@@ -972,42 +1044,405 @@ body {
     font-style: italic;
 }
 
-/* Responsive para pestañas */
+/* ===== DISEÑO RESPONSIVO ===== */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 280px;
+        --spacing-lg: 20px;
+        --spacing-md: 14px;
+    }
+    
+    .sidebar-header {
+        padding: var(--spacing-md);
+    }
+    
+    .tab-content {
+        padding: var(--spacing-md);
+    }
+}
+
+/* Móviles y pantallas pequeñas */
 @media (max-width: 768px) {
-    .sidebar-tabs {
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+    :root {
+        --sidebar-width: 100%;
+        --spacing-lg: 16px;
+        --spacing-md: 12px;
+        --spacing-sm: 6px;
     }
     
-    .sidebar-tabs::-webkit-scrollbar {
-        display: none;
+    body {
+        overflow: auto;
     }
     
-    .tab-btn {
-        min-width: 60px;
-        white-space: nowrap;
+    /* Mostrar botón hamburguesa */
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
-    .sidebar {
-        width: 280px;
+    .mobile-overlay {
+        display: block;
     }
     
+    /* Layout móvil */
     .app-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    /* Sidebar como overlay en móvil */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 85%;
+        max-width: 320px;
+        height: 100vh;
+        z-index: 1001;
+        transform: translateX(-100%);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    
+    /* Header móvil en el main content */
+    .main-content {
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        padding-top: var(--mobile-header-height);
+        display: flex;
         flex-direction: column;
     }
     
-    .sidebar {
-        width: 100%;
-        height: 250px;
+    .mobile-header {
+        display: flex;
     }
     
-    .main-content {
-        height: calc(100vh - 250px);
+    .mobile-header h1 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        text-align: center;
+    }
+    
+    /* Ajustes para pestañas en móvil */
+    .sidebar-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--sidebar-bg);
+        border-bottom: 2px solid var(--border-color);
+        padding: 0 4px;
+    }
+    
+    .tab-btn {
+        padding: 12px 8px;
+        font-size: 0.85rem;
+        min-width: 0;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .tab-btn.active {
+        border-bottom-width: 3px;
+    }
+    
+    /* Contenido de pestañas optimizado para móvil */
+    .tab-content {
+        padding: var(--spacing-md);
+        max-height: none;
+        overflow-y: visible;
+    }
+    
+    /* Chat area adaptada */
+    .chat-area {
+        padding: var(--spacing-md);
+        min-height: calc(100vh - var(--mobile-header-height) - 140px);
+    }
+    
+    .chat-container {
+        max-height: 50vh;
+        padding: var(--spacing-sm);
+    }
+    
+    .message {
+        margin-bottom: var(--spacing-sm);
     }
     
     .message-content {
         max-width: 85%;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    /* Input area para móvil */
+    .input-area {
+        padding: var(--spacing-md);
+        background: var(--background);
+        border-top: 1px solid var(--border-color);
+        position: sticky;
+        bottom: 0;
+    }
+    
+    .input-container {
+        gap: 8px;
+    }
+    
+    #message-input {
+        font-size: 16px; /* Evita zoom en iOS */
+        padding: 12px 16px;
+        min-height: 44px; /* Mínimo para touch */
+    }
+    
+    .send-btn {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Tags de emociones optimizadas */
+    .emotion-tag {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        margin: 2px;
+        border-radius: 16px;
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Profile info en sidebar móvil */
+    .profile-info {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+    
+    .profile-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    
+    .stat-text {
+        font-size: 0.85rem;
+    }
+    
+    /* Configuración móvil */
+    .config-section {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .config-group {
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .config-group label {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }
+    
+    .config-group input,
+    .config-group select,
+    .config-group textarea {
+        font-size: 16px; /* Evita zoom en iOS */
+        padding: 12px;
+        min-height: 44px;
+    }
+    
+    /* Botones de acción */
+    .action-btn {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 0.9rem;
+        margin: 4px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Test controls móvil */
+    .test-controls-today .action-btn,
+    .test-controls .action-btn {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    /* Debug info responsive */
+    .debug-section {
+        font-size: 0.8rem;
+    }
+    
+    .debug-output {
+        font-size: 0.75rem;
+        padding: 8px;
+        max-height: 200px;
+    }
+    
+    /* Historial responsive */
+    .history-item {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        border-radius: 8px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .history-date {
+        font-size: 0.85rem;
+    }
+    
+    .history-title {
+        font-size: 1rem;
+        margin: 4px 0;
+    }
+    
+    .history-summary {
+        font-size: 0.85rem;
+        line-height: 1.3;
+    }
+    
+    /* Search bar móvil */
+    #search-input {
+        font-size: 16px;
+        padding: 12px 16px;
+        min-height: 44px;
+        border-radius: 8px;
+        margin-bottom: var(--spacing-md);
+    }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+    :root {
+        --spacing-lg: 12px;
+        --spacing-md: 10px;
+        --spacing-sm: 4px;
+    }
+    
+    .sidebar {
+        width: 90%;
+    }
+    
+    .mobile-header h1 {
+        font-size: 1.1rem;
+    }
+    
+    .tab-btn {
+        padding: 10px 6px;
+        font-size: 0.8rem;
+    }
+    
+    .tab-content {
+        padding: var(--spacing-sm);
+    }
+    
+    .entry-title {
+        font-size: 1rem;
+    }
+    
+    .entry-summary p {
+        font-size: 0.85rem;
+    }
+    
+    .emotion-tag {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        min-height: 28px;
+    }
+    
+    .message-content {
+        font-size: 0.85rem;
+        padding: 10px 12px;
+    }
+    
+    #message-input {
+        font-size: 16px;
+        padding: 10px 12px;
+    }
+    
+    .send-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .action-btn {
+        min-height: 40px;
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Responsive para perfil modal */
+@media (max-width: 768px) {
+    .profile-modal-content {
+        width: 95vw;
+        height: 90vh;
+        margin: 5vh auto;
+        border-radius: 12px;
+    }
+    
+    .profile-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .profile-modal-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .profile-tabs {
+        padding: 0 4px;
+    }
+    
+    .profile-tab-btn {
+        padding: 12px 8px;
+        font-size: 0.85rem;
+        min-width: 0;
+        flex: 1;
+    }
+    
+    .profile-tab-content {
+        padding: var(--spacing-md);
+        max-height: calc(90vh - 140px);
+        overflow-y: auto;
+    }
+    
+    .insights-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .insight-card {
+        padding: var(--spacing-md);
+    }
+    
+    .emotion-chart {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .trend-item {
+        padding: var(--spacing-sm);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .ai-suggestion {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        border-radius: 8px;
     }
 }
 
@@ -1357,22 +1792,46 @@ body {
     animation: pulse 2s infinite;
 }
 
-/* Responsive para perfil modal */
-@media (max-width: 768px) {
-    .profile-modal-content {
-        width: 95vw;
-        height: 90vh;
+/* Estilos adicionales para móvil */
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--mobile-header-height);
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 100;
+    padding: 0 70px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Mejorar la experiencia táctil */
+@media (hover: none) and (pointer: coarse) {
+    /* Dispositivos táctiles */
+    .tab-btn, .action-btn, .send-btn, .emotion-tag {
+        -webkit-tap-highlight-color: rgba(16, 163, 127, 0.2);
     }
     
-    .insights-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .tab-btn:active {
+        background-color: rgba(16, 163, 127, 0.1);
+        transform: scale(0.98);
     }
     
-    .profile-tabs {
-        flex-direction: column;
+    .send-btn:active {
+        transform: scale(0.95);
     }
     
-    .emotion-chart {
-        flex-direction: column;
+    .emotion-tag:active {
+        transform: scale(0.95);
+    }
+}
+
+/* Scrollbar personalizada para webkit en móvil */
+@supports (-webkit-overflow-scrolling: touch) {
+    .tab-content, .chat-container {
+        -webkit-overflow-scrolling: touch;
     }
 }

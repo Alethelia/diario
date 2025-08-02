@@ -104,6 +104,88 @@ class DiaryApp {
             messageInput.style.height = 'auto';
             messageInput.style.height = messageInput.scrollHeight + 'px';
         });
+        
+        // Funcionalidad móvil
+        this.setupMobileNavigation();
+    }
+    
+    setupMobileNavigation() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                this.toggleMobileMenu();
+            });
+        }
+        
+        if (mobileOverlay) {
+            mobileOverlay.addEventListener('click', () => {
+                this.closeMobileMenu();
+            });
+        }
+        
+        // Cerrar menú móvil al hacer clic en una pestaña
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Pequeño delay para que se vea el cambio de pestaña
+                setTimeout(() => {
+                    if (window.innerWidth <= 768) {
+                        this.closeMobileMenu();
+                    }
+                }, 300);
+            });
+        });
+        
+        // Detectar cambios de orientación/tamaño de pantalla
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                this.closeMobileMenu();
+            }
+        });
+    }
+    
+    toggleMobileMenu() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebar && mobileMenuBtn && mobileOverlay) {
+            const isOpen = sidebar.classList.contains('mobile-open');
+            
+            if (isOpen) {
+                this.closeMobileMenu();
+            } else {
+                this.openMobileMenu();
+            }
+        }
+    }
+    
+    openMobileMenu() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebar && mobileMenuBtn && mobileOverlay) {
+            sidebar.classList.add('mobile-open');
+            mobileMenuBtn.classList.add('active');
+            mobileOverlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    closeMobileMenu() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebar && mobileMenuBtn && mobileOverlay) {
+            sidebar.classList.remove('mobile-open');
+            mobileMenuBtn.classList.remove('active');
+            mobileOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
     }
     
     // Gestión de fecha y entrada actual
