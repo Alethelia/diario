@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diario Personal - TDAH Friendly</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra lateral -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Mi Diario</h2>
+                <div class="profile-info">
+                    <div class="profile-avatar" id="profile-avatar" title="Mi Perfil">
+                        <span class="avatar-emoji">🧠</span>
+                        <div class="mood-indicator" id="mood-indicator"></div>
+                    </div>
+                    <div class="profile-stats" id="profile-stats">
+                        <span class="stat-text" id="current-mood">Analizando...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" data-tab="today">Hoy</button>
+                <button class="tab-btn" data-tab="history">Historial</button>
+                <button class="tab-btn" data-tab="settings">⚙️</button>
+            </div>
+            
+            <!-- Contenedor con scroll para las pestañas -->
+            <div class="tabs-container">
+                <!-- Pestaña de Hoy -->
+                <div class="tab-content" id="today-tab">
+                <div class="today-entry">
+                    <div class="entry-date" id="current-date"></div>
+                    <div class="entry-title" id="current-title">Sin título</div>
+                    <div class="entry-summary">
+                        <h4>Resumen del día</h4>
+                        <p id="day-summary">Comienza a escribir para generar un resumen...</p>
+                    </div>
+                    <div class="entry-tags">
+                        <h4>Emociones y temas</h4>
+                        <div id="emotion-tags" class="tags-container"></div>
+                    </div>
+                </div>
+                
+                <!-- Controles de test en pestaña Hoy -->
+                <div class="test-controls-today hidden" id="test-controls-today">
+                    <h4>🧪 Controles de Test</h4>
+                    <div class="test-buttons-grid">
+                        <button id="manual-analyze-today-btn" class="test-btn-compact">🔍 Analizar</button>
+                        <button id="clear-all-today-btn" class="test-btn-compact danger">🗑️ Limpiar</button>
+                        <button id="debug-today-btn" class="test-btn-compact debug">🐛 Debug</button>
+                        <button id="export-debug-today-btn" class="test-btn-compact">📄 Export</button>
+                    </div>
+                    <div class="debug-mini hidden" id="debug-mini">
+                        <div class="debug-mini-item">
+                            <strong>Análisis:</strong> <span id="debug-analysis-mini">--</span>
+                        </div>
+                        <div class="debug-mini-item">
+                            <strong>Caracteres:</strong> <span id="debug-chars-mini">0/750</span>
+                        </div>
+                        <div class="debug-mini-item">
+                            <strong>Próximo:</strong> <span id="debug-next-mini">--</span>
+                        </div>
+                        <div class="debug-mini-item">
+                            <strong>Estado:</strong> <span id="debug-status-mini">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pestaña de Historial -->
+            <div class="tab-content hidden" id="history-tab">
+                <div class="history-search">
+                    <input type="text" id="search-input" placeholder="Buscar por emoción, tema...">
+                </div>
+                <div id="history-list" class="history-list"></div>
+            </div>
+            
+            <!-- Pestaña de Configuración -->
+            <div class="tab-content hidden" id="settings-tab">
+                <div class="settings-section">
+                    <h4>Configuración de OpenAI</h4>
+                    <div class="setting-item">
+                        <label for="api-key-setting">API Key:</label>
+                        <div class="api-key-container">
+                            <input type="password" id="api-key-setting" placeholder="sk-..." value="">
+                            <button id="toggle-api-key" class="toggle-btn">👁️</button>
+                        </div>
+                        <small>Necesaria para análisis automático con GPT-4o</small>
+                        <div class="api-status" id="api-status"></div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>Análisis Automático</h4>
+                    <div class="setting-item">
+                        <label for="auto-analyze-chars">Analizar cada:</label>
+                        <select id="auto-analyze-chars">
+                            <option value="500">500 caracteres</option>
+                            <option value="750" selected>750 caracteres</option>
+                            <option value="1000">1000 caracteres</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="auto-analyze-time">O cada:</label>
+                        <select id="auto-analyze-time">
+                            <option value="300">5 minutos</option>
+                            <option value="600" selected>10 minutos</option>
+                            <option value="900">15 minutos</option>
+                            <option value="1800">30 minutos</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <div class="analysis-info" id="analysis-info">
+                            <span>Próximo análisis: <span id="next-analysis">--</span></span>
+                            <span>Caracteres: <span id="char-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>Modo Test</h4>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="test-mode" class="test-checkbox">
+                            Activar modo de pruebas
+                        </label>
+                        <small>Habilita controles adicionales para testing</small>
+                    </div>
+                    <div class="test-controls hidden" id="test-controls">
+                        <button id="manual-analyze-btn" class="test-btn">🔍 Analizar Ahora</button>
+                        <button id="clear-all-btn" class="test-btn danger">🗑️ Eliminar Todas las Entradas</button>
+                        <button id="debug-btn" class="test-btn debug">🐛 Debug Info</button>
+                        <small class="warning-text">⚠️ Los controles de test están activos</small>
+                    </div>
+                </div>
+                
+                <div class="settings-section hidden" id="debug-section">
+                    <h4>🐛 Información de Debug</h4>
+                    <div class="debug-container">
+                        <div class="debug-item">
+                            <h5>Estado Actual:</h5>
+                            <pre id="debug-current-state" class="debug-output"></pre>
+                        </div>
+                        <div class="debug-item">
+                            <h5>Todas las Entradas:</h5>
+                            <pre id="debug-all-entries" class="debug-output"></pre>
+                        </div>
+                        <div class="debug-item">
+                            <h5>Configuración:</h5>
+                            <pre id="debug-config" class="debug-output"></pre>
+                        </div>
+                        <div class="debug-item">
+                            <h5>Contadores de Análisis:</h5>
+                            <pre id="debug-analysis-counters" class="debug-output"></pre>
+                        </div>
+                        <button id="refresh-debug" class="test-btn">🔄 Actualizar Debug</button>
+                        <button id="export-debug" class="test-btn">📄 Exportar Debug</button>
+                    </div>
+                </div>
+            </div>
+            </div> <!-- Fin tabs-container -->
+        </div>
+        
+        <!-- Área principal del chat -->
+        <div class="main-content">
+            <div class="chat-header">
+                <h3 id="chat-title">Entrada de hoy</h3>
+                <div class="chat-status">
+                    <span class="analysis-status" id="analysis-status">🤖 Listo para analizar</span>
+                </div>
+            </div>
+            
+            <div class="chat-container" id="chat-container">
+                <!-- Los mensajes se generarán dinámicamente -->
+            </div>
+            
+            <div class="input-container">
+                <textarea 
+                    id="message-input" 
+                    placeholder="¿Cómo te sientes hoy? Escribe lo que quieras..."
+                    rows="3"
+                ></textarea>
+                <button id="send-btn" class="send-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13" stroke="currentColor" stroke-width="2"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para configurar API Key -->
+    <div id="api-modal" class="modal">
+        <div class="modal-content">
+            <h3>Configuración de OpenAI</h3>
+            <p>Para usar las funciones de análisis, necesitas una API Key de OpenAI:</p>
+            <input type="password" id="api-key-input" placeholder="sk-...">
+            <div class="modal-buttons">
+                <button id="save-api-key">Guardar</button>
+                <button id="skip-api-key">Omitir por ahora</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Perfil -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content profile-modal-content">
+            <div class="profile-modal-header">
+                <h3>🧠 Mi Perfil Emocional</h3>
+                <button class="modal-close" id="close-profile-modal">×</button>
+            </div>
+            
+            <div class="profile-tabs">
+                <button class="profile-tab-btn active" data-profile-tab="insights">📊 Insights</button>
+                <button class="profile-tab-btn" data-profile-tab="trends">📈 Tendencias</button>
+                <button class="profile-tab-btn" data-profile-tab="suggestions">💡 Sugerencias</button>
+            </div>
+
+            <!-- Tab: Insights -->
+            <div class="profile-tab-content active" id="insights-tab">
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <div class="insight-title">Estado Emocional Actual</div>
+                        <div class="insight-value" id="current-emotional-state">Analizando...</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-title">Días Activos</div>
+                        <div class="insight-value" id="active-days">0</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-title">Palabras Escritas</div>
+                        <div class="insight-value" id="total-words">0</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-title">Análisis Completados</div>
+                        <div class="insight-value" id="total-analysis">0</div>
+                    </div>
+                </div>
+                
+                <div class="recent-patterns">
+                    <h4>🔍 Patrones Recientes</h4>
+                    <div class="pattern-list" id="recent-patterns">
+                        <div class="pattern-item">Cargando patrones...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Tendencias -->
+            <div class="profile-tab-content" id="trends-tab">
+                <div class="trends-section">
+                    <h4>📈 Emociones Dominantes (7 días)</h4>
+                    <div class="emotion-chart" id="emotion-trends"></div>
+                </div>
+                
+                <div class="trends-section">
+                    <h4>🕒 Patrones de Tiempo</h4>
+                    <div class="time-patterns" id="time-patterns">
+                        <div class="time-stat">
+                            <span class="time-label">Hora más activa:</span>
+                            <span class="time-value" id="most-active-hour">Calculando...</span>
+                        </div>
+                        <div class="time-stat">
+                            <span class="time-label">Promedio de entradas por día:</span>
+                            <span class="time-value" id="avg-entries-per-day">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trends-section">
+                    <h4>🎯 Temas Frecuentes</h4>
+                    <div class="theme-cloud" id="theme-trends"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Sugerencias -->
+            <div class="profile-tab-content" id="suggestions-tab">
+                <div class="suggestions-section">
+                    <h4>💡 Sugerencias Personalizadas</h4>
+                    <div class="suggestion-list" id="ai-suggestions">
+                        <div class="suggestion-item loading">
+                            <div class="suggestion-icon">🤖</div>
+                            <div class="suggestion-text">Generando sugerencias inteligentes...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="habits-section">
+                    <h4>🎯 Seguimiento de Hábitos</h4>
+                    <div class="habits-tracker" id="habits-tracker">
+                        <div class="habit-item">
+                            <span class="habit-label">Calidad del sueño:</span>
+                            <span class="habit-value" id="sleep-quality">Sin datos</span>
+                        </div>
+                        <div class="habit-item">
+                            <span class="habit-label">Nivel de estrés:</span>
+                            <span class="habit-value" id="stress-level">Sin datos</span>
+                        </div>
+                        <div class="habit-item">
+                            <span class="habit-label">Productividad:</span>
+                            <span class="habit-value" id="productivity-level">Sin datos</span>
+                        </div>
+                        <div class="habit-item">
+                            <span class="habit-label">Relaciones sociales:</span>
+                            <span class="habit-value" id="social-level">Sin datos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goals-section">
+                    <h4>🎖️ Logros y Metas</h4>
+                    <div class="goals-list" id="goals-list">
+                        <div class="goal-item">
+                            <span class="goal-icon">⏰</span>
+                            <span class="goal-text">Mantener consistencia en el diario</span>
+                            <span class="goal-status" id="consistency-goal">0/7 días</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script></script>
+</body>
+</html>
