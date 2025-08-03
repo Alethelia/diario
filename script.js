@@ -28,6 +28,7 @@ class DiaryApp {
         this.startAutoAnalysis();
         this.loadSettings();
         this.updateProfileInfo();
+        this.updateDataInfo();
     }
     
     setupEventListeners() {
@@ -68,6 +69,11 @@ class DiaryApp {
         document.getElementById('clear-all-today-btn').addEventListener('click', () => this.clearAllEntries());
         document.getElementById('debug-today-btn').addEventListener('click', () => this.toggleDebugMini());
         document.getElementById('export-debug-today-btn').addEventListener('click', () => this.exportDebugInfo());
+        
+        // Gestión de datos
+        document.getElementById('export-data-btn').addEventListener('click', () => this.exportData());
+        document.getElementById('import-data-btn').addEventListener('click', () => this.importData());
+        document.getElementById('import-file-input').addEventListener('change', (e) => this.handleFileImport(e));
         
         // Búsqueda en historial
         document.getElementById('search-input').addEventListener('input', (e) => this.searchHistory(e.target.value));
@@ -1033,6 +1039,294 @@ class DiaryApp {
         URL.revokeObjectURL(url);
         
         alert('📄 Debug info exportado como JSON');
+    }
+    
+    // ===== GESTIÓN DE DATOS MULTIPLATAFORMA =====
+    
+    exportData() {
+        try {
+            const exportData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                deviceInfo: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language
+                },
+                diaryEntries: this.entries,
+                settings: {
+                    autoAnalysisChars: this.autoAnalysisChars,
+                    autoAnalysisTime: this.autoAnalysisTime,
+                    testMode: this.testMode
+                },
+                metadata: {
+                    totalEntries: Object.keys(this.entries).length,
+                    dateRange: this.getDateRange(),
+                    totalWords: this.getTotalWords(),
+                    totalCharacters: this.getTotalCharactersAllEntries()
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mi-diario-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Mostrar notificación de éxito
+            this.showNotification('✅ Datos exportados correctamente', 'success');
+            
+            console.log('📤 Datos exportados:', {
+                entries: Object.keys(this.entries).length,
+                size: Math.round(JSON.stringify(exportData).length / 1024) + ' KB'
+            });
+            
+        } catch (error) {
+            console.error('❌ Error al exportar datos:', error);
+            this.showNotification('❌ Error al exportar datos', 'error');
+        }
+    }
+    
+    importData() {
+        const fileInput = document.getElementById('import-file-input');
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+    
+    async handleFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            // Validar formato del archivo
+            if (!this.validateImportData(data)) {
+                throw new Error('Formato de archivo inválido');
+            }
+            
+            // Mostrar confirmación antes de importar
+            const confirmation = confirm(
+                `📥 IMPORTAR DATOS\n\n` +
+                `Archivo: ${file.name}\n` +
+                `Entradas: ${Object.keys(data.diaryEntries || {}).length}\n` +
+                `Exportado: ${new Date(data.exportDate).toLocaleDateString()}\n\n` +
+                `⚠️ Esto FUSIONARÁ los datos con los existentes.\n` +
+                `¿Continuar?`
+            );
+            
+            if (!confirmation) {
+                // Limpiar input
+                event.target.value = '';
+                return;
+            }
+            
+            // Realizar la importación
+            await this.performDataImport(data);
+            
+            // Limpiar input
+            event.target.value = '';
+            
+        } catch (error) {
+            console.error('❌ Error al importar datos:', error);
+            this.showNotification('❌ Error al importar: ' + error.message, 'error');
+            event.target.value = '';
+        }
+    }
+    
+    validateImportData(data) {
+        return (
+            data &&
+            data.version &&
+            data.diaryEntries &&
+            typeof data.diaryEntries === 'object'
+        );
+    }
+    
+    async performDataImport(data) {
+        try {
+            let mergedCount = 0;
+            let newCount = 0;
+            let conflictCount = 0;
+            
+            // Fusionar entradas
+            Object.keys(data.diaryEntries).forEach(dateKey => {
+                const importedEntry = data.diaryEntries[dateKey];
+                const existingEntry = this.entries[dateKey];
+                
+                if (existingEntry) {
+                    // Conflicto: entrada ya existe
+                    conflictCount++;
+                    
+                    // Estrategia: mantener la entrada más reciente
+                    const importedDate = new Date(importedEntry.updatedAt || importedEntry.createdAt);
+                    const existingDate = new Date(existingEntry.updatedAt || existingEntry.createdAt);
+                    
+                    if (importedDate > existingDate) {
+                        this.entries[dateKey] = importedEntry;
+                        mergedCount++;
+                    }
+                } else {
+                    // Nueva entrada
+                    this.entries[dateKey] = importedEntry;
+                    newCount++;
+                }
+            });
+            
+            // Importar configuraciones si no existen
+            if (data.settings) {
+                if (!localStorage.getItem('auto_analysis_chars') && data.settings.autoAnalysisChars) {
+                    this.autoAnalysisChars = data.settings.autoAnalysisChars;
+                    localStorage.setItem('auto_analysis_chars', this.autoAnalysisChars.toString());
+                }
+                
+                if (!localStorage.getItem('auto_analysis_time') && data.settings.autoAnalysisTime) {
+                    this.autoAnalysisTime = data.settings.autoAnalysisTime;
+                    localStorage.setItem('auto_analysis_time', (this.autoAnalysisTime / 1000).toString());
+                }
+            }
+            
+            // Guardar datos fusionados
+            this.saveEntries();
+            
+            // Actualizar UI
+            this.loadTodayEntry();
+            this.loadHistory();
+            this.updateDataInfo();
+            
+            // Mostrar resultado
+            const message = 
+                `✅ IMPORTACIÓN COMPLETADA\n\n` +
+                `📥 Entradas nuevas: ${newCount}\n` +
+                `🔄 Entradas actualizadas: ${mergedCount}\n` +
+                `⚠️ Conflictos resueltos: ${conflictCount}\n\n` +
+                `Total de entradas: ${Object.keys(this.entries).length}`;
+            
+            alert(message);
+            this.showNotification('✅ Datos importados correctamente', 'success');
+            
+            console.log('📥 Importación completada:', {
+                nuevas: newCount,
+                actualizadas: mergedCount,
+                conflictos: conflictCount,
+                total: Object.keys(this.entries).length
+            });
+            
+        } catch (error) {
+            throw new Error('Error al procesar los datos: ' + error.message);
+        }
+    }
+    
+    showNotification(message, type = 'info') {
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // Estilos inline para la notificación
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.3s ease;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+        
+        // Colores según tipo
+        switch (type) {
+            case 'success':
+                notification.style.background = 'linear-gradient(135deg, #10a37f, #059669)';
+                break;
+            case 'error':
+                notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                break;
+            default:
+                notification.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+        }
+        
+        document.body.appendChild(notification);
+        
+        // Animar entrada
+        requestAnimationFrame(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        });
+        
+        // Remover después de 4 segundos
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100px)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 4000);
+    }
+    
+    getDateRange() {
+        const dates = Object.keys(this.entries).sort();
+        if (dates.length === 0) return null;
+        
+        return {
+            first: dates[0],
+            last: dates[dates.length - 1],
+            span: dates.length
+        };
+    }
+    
+    getTotalWords() {
+        let totalWords = 0;
+        Object.values(this.entries).forEach(entry => {
+            if (entry.messages) {
+                entry.messages.forEach(message => {
+                    if (message.type === 'user') {
+                        totalWords += message.content.split(/\s+/).length;
+                    }
+                });
+            }
+        });
+        return totalWords;
+    }
+    
+    getTotalCharactersAllEntries() {
+        let totalChars = 0;
+        Object.values(this.entries).forEach(entry => {
+            if (entry.messages) {
+                entry.messages.forEach(message => {
+                    if (message.type === 'user') {
+                        totalChars += message.content.length;
+                    }
+                });
+            }
+        });
+        return totalChars;
+    }
+    
+    updateDataInfo() {
+        const totalEntriesElement = document.getElementById('total-entries');
+        const dataSizeElement = document.getElementById('data-size');
+        
+        if (totalEntriesElement) {
+            totalEntriesElement.textContent = Object.keys(this.entries).length;
+        }
+        
+        if (dataSizeElement) {
+            const dataSize = Math.round(JSON.stringify(this.entries).length / 1024);
+            dataSizeElement.textContent = dataSize + ' KB';
+        }
     }
     
     getDebugCurrentState() {

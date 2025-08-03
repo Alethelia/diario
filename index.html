@@ -133,6 +133,25 @@
                 </div>
                 
                 <div class="settings-section">
+                    <h4>📁 Gestión de Datos</h4>
+                    <div class="setting-item">
+                        <label>Exportar/Importar datos para uso multiplataforma</label>
+                        <div class="data-management-buttons">
+                            <button id="export-data-btn" class="action-btn export">📤 Exportar Datos</button>
+                            <button id="import-data-btn" class="action-btn import">📥 Importar Datos</button>
+                        </div>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                        <small>Exporta tus datos para usarlos en otros dispositivos o como respaldo</small>
+                    </div>
+                    <div class="setting-item">
+                        <div class="data-info" id="data-info">
+                            <span>Total de entradas: <span id="total-entries">0</span></span>
+                            <span>Tamaño aproximado: <span id="data-size">0 KB</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
                     <h4>Modo Test</h4>
                     <div class="setting-item">
                         <label>
